@@ -1,0 +1,4 @@
+docker run -d --name mosquitto -p 1883:1883 -p 9001:9001 `
+  -v .\Mosquitto\config:/mosquitto/config `
+  -v .\Mosquitto\data:/mosquitto/data `
+  eclipse-mosquitto
