@@ -33,7 +33,7 @@ def import_data_from_csv(csv_file_path, collection):
                 'temperature': float(row['Temperature']),
 
             }
-            if cnt == 5:
+            if cnt == 100:
                 break
             collection.insert_one(data)
     print("Data imported successfully from CSV to MongoDB!")

@@ -8,55 +8,11 @@ namespace Analytics
 {
     internal class Program
     {
-        public static async Task Clean_Disconnect()
-        {
-            /*
-             * This sample disconnects in a clean way. This will send a MQTT DISCONNECT packet
-             * to the server and close the connection afterwards.
-             *
-             * See sample _Connect_Client_ for more details.
-             */
-
-            var mqttFactory = new MqttFactory();
-
-            using (var mqttClient = mqttFactory.CreateMqttClient())
-            {
-                var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer("broker.hivemq.com").Build();
-                await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-
-                // This will send the DISCONNECT packet. Calling _Dispose_ without DisconnectAsync the 
-                // connection is closed in a "not clean" way. See MQTT specification for more details.
-                await mqttClient.DisconnectAsync(new MqttClientDisconnectOptionsBuilder().WithReason(MqttClientDisconnectOptionsReason.NormalDisconnection).Build());
-            }
-        }
-
-        public static async Task Connect_Client()
-        {
-          
-
-            var mqttFactory = new MqttFactory();
-
-            using (var mqttClient = mqttFactory.CreateMqttClient())
-            {
-                // Use builder classes where possible in this project.
-                var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer("localhost").Build();
-
-                // This will throw an exception if the server is not available.
-                // The result from this message returns additional data which was sent 
-                // from the server. Please refer to the MQTT protocol specification for details.
-                var response = await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
-
-                Console.WriteLine("The MQTT client is connected.");
-
-                //response.DumpToConsole();
-
-                // Send a clean disconnect to the server by calling _DisconnectAsync_. Without this the TCP connection
-                // gets dropped and the server will handle this as a non clean disconnect (see MQTT spec for details).
-                var mqttClientDisconnectOptions = mqttFactory.CreateClientDisconnectOptionsBuilder().Build();
-
-                await mqttClient.DisconnectAsync(mqttClientDisconnectOptions, CancellationToken.None);
-            }
-        }
+       
+        static Dictionary<int,float> avgTemp = new Dictionary<int,float>();
+        static Dictionary<int,float> avgHum = new Dictionary<int,float>();
+        static Dictionary<int,float> count = new Dictionary<int,float>();
+       
         public static async Task Handle_Received_Application_Message()
         {
             /*
@@ -77,19 +33,81 @@ namespace Analytics
                     //read json attributes from message
                     var message = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
                     //deserialize json
-                    var json = JsonConvert.DeserializeObject<MerenjeDTO>(message);
+                    var vrednostSenzora = JsonConvert.DeserializeObject<MerenjeDTO>(message);
                     Console.WriteLine("Received application message.");
                     Console.WriteLine(message);
-                    //publish to another topic with the same message
-                    if (json.Temperature < 25)
+
+                    if(!avgTemp.ContainsKey(vrednostSenzora.Device))
                     {
+                        avgTemp.Add(vrednostSenzora.Device, vrednostSenzora.Temperature);
+                        avgHum.Add(vrednostSenzora.Device, vrednostSenzora.Humidity);
+                        count.Add(vrednostSenzora.Device, 1);
+                    }
+                    else
+                    {
+                        avgTemp[vrednostSenzora.Device] += vrednostSenzora.Temperature;
+                        avgHum[vrednostSenzora.Device] += vrednostSenzora.Humidity;
+                        count[vrednostSenzora.Device] += 1;
+                    }
+
+                    //send analytics on every 10th message
+                    if (count[vrednostSenzora.Device] % 10 == 0)
+                    {
+                        
+
+                        AnalyticsDTO analyticsDTO = new AnalyticsDTO
+                        {
+                            Date = DateTime.Now,
+                            Time = DateTime.Now.TimeOfDay,
+                            Device = vrednostSenzora.Device,
+                            Battery = vrednostSenzora.Battery,
+                            AverageHumidity = avgHum[vrednostSenzora.Device] / count[vrednostSenzora.Device] ,
+                            AverageTemperature = avgTemp[vrednostSenzora.Device] / count[vrednostSenzora.Device] 
+                        };
 
                         var mqttApplicationMessage = new MqttApplicationMessageBuilder()
-                            .WithTopic("event")
-                            .WithPayload(Encoding.UTF8.GetBytes(message))
+                            .WithTopic("analytics")
+                            .WithPayload(JsonConvert.SerializeObject(analyticsDTO))
                             .Build();
 
                         mqttClient.PublishAsync(mqttApplicationMessage, CancellationToken.None);
+                        Console.WriteLine("Analytics sent.");
+
+                    }
+
+                    
+
+
+                    String poruka = "";
+                   
+                    if (vrednostSenzora.Temperature < 20)
+                        poruka = "Temperatura je ispod 20 stepeni/n";
+                    if (vrednostSenzora.Humidity < 30)
+                        poruka += "Vlaznost vazduha je ispod 30%./n";
+                    if(vrednostSenzora.Battery < 1)
+                        poruka += "Baterija je prazna.";
+
+                    if(poruka != "")
+                    { 
+                        EventDTO eventDTO = new EventDTO
+                        {
+
+                            Date = vrednostSenzora.Date,
+                            Time = vrednostSenzora.Time,
+                            Device = vrednostSenzora.Device,
+                            Battery = vrednostSenzora.Battery,
+                            Humidity = vrednostSenzora.Humidity,
+                            Temperature = vrednostSenzora.Temperature,
+                            Message = poruka
+                        };
+                        var mqttApplicationMessage = new MqttApplicationMessageBuilder()
+                            .WithTopic("event")
+                            .WithPayload(JsonConvert.SerializeObject(eventDTO))
+                            .Build();
+
+
+                        mqttClient.PublishAsync(mqttApplicationMessage, CancellationToken.None);
+                        Console.WriteLine("Event sent.");
                     }
 
                     return Task.CompletedTask;
@@ -107,7 +125,7 @@ namespace Analytics
 
                 await mqttClient.SubscribeAsync(mqttSubscribeOptions, CancellationToken.None);
 
-                Console.WriteLine("MQTT client subscribed to topic.");
+                Console.WriteLine("MQTT client subscribed to topic merenje.");
 
                 Console.WriteLine("Press enter to exit.");
 
@@ -119,12 +137,16 @@ namespace Analytics
             }
         }
 
-        
+        static async Task SendAnalitycs()
+        {
+
+        }
 
         static async Task Main(string[] args)
         {
+            Console.WriteLine("Analytics servise");
             await Handle_Received_Application_Message();
-  
+            
           
         }
 

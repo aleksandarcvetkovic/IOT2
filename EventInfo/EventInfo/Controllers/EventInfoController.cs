@@ -30,10 +30,24 @@ namespace EventInfo
         {
             return eventInfoHistory.GetLastNEvents(n);
         }
+
         [HttpGet("GetLastEventWithId/{id}")]
         public ActionResult<EventDTO> GetLastEventWithId(int id)
         {
             return eventInfoHistory.GetLastEventWithId(id);
         }
+
+        [HttpGet("GetAllAnalytics")]
+        public ActionResult<List<AnalyticsDTO>> GetAllAnalytics()
+        {
+            return AnalyticsStore.Instance.GetAllAnalytics();
+        }
+
+        [HttpGet("GetAnalyticsById/{id}")]
+        public ActionResult<AnalyticsDTO> GetAnalyticsById(int id)
+        {
+            return AnalyticsStore.Instance.GetAnalyticsById(id);
+        }
+
     }
 }

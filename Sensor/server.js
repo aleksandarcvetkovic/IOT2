@@ -8,11 +8,11 @@ const collectionName = 'senzor'; // Replace with your collection name
 const mqttUrl = 'mqtt://localhost:1883'; // MQTT broker URL
 const client = new MongoClient(mongoUrl);
 
-async function findAllDocumentsWithAttribute(collection, id) {
+async function findAllDocuments(collection) {
   try {
     
-    const documents = await collection.find({ device: id }).toArray();
-    console.log('Documents found in mongo:', documents);
+    const documents = await collection.find().toArray();
+    //console.log('Documents found in mongo:', documents);
     return documents;
   } catch (error) {
     console.error('Error finding documents:', error);
@@ -40,19 +40,24 @@ async function main() {
   const collection = db.collection(collectionName);
 
   // Read data from MongoDB
-  const data = await findAllDocumentsWithAttribute(collection, 1111);
-  console.log('Data retrieved from MongoDB:', data);
+  const data = await findAllDocuments(collection);
+  //console.log('Data retrieved from MongoDB:', data);
 
   // Connect to MQTT broker
   const mqttClient = mqtt.connect(mqttUrl);
   mqttClient.on('connect', () => {
-    console.log('Connected successfully to MQTT broker');
-    data.forEach(item => {
-      const message = JSON.stringify(item);
+
+    for(let i = 0; i < data.length; i++){
+      const message = JSON.stringify(data[i]);
       mqttClient.publish('merenje', message, () => {
         console.log('Message published:', message);
+        //sleep for 3 second
       });
-    });
+      setTimeout(() => {
+        console.log('Sleeping for 3 second');
+      }, 3000);
+    }
+   
   });
 
   // Close connections after publishing

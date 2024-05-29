@@ -10,6 +10,8 @@ namespace EventInfo
     {
 
         
+
+
         public static async Task Handle_Received_Application_Message()
         {
             /*
@@ -29,23 +31,38 @@ namespace EventInfo
                 {
                     //read json attributes from message
                     var message = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-                    //deserialize json
-                    var Event = JsonConvert.DeserializeObject<EventDTO>(message);
-                    Console.WriteLine("Received event message.");
-                    Console.WriteLine(message);
-                    //publish to another topic with the same message
-                    EventInfoHistory.Instance.AddEvent(Event);
+                    if(e.ApplicationMessage.Topic == "event")
+                    {
+                        Console.WriteLine("Received event message./n");
+                        Console.WriteLine(message);
+                        //deserialize json
+                        var Event = JsonConvert.DeserializeObject<EventDTO>(message);
+                        EventInfoHistory.Instance.AddEvent(Event);
+                        Console.WriteLine("/nEvent added to history./n/n");
+                    }
+                    else if(e.ApplicationMessage.Topic == "analytics")
+                    {
+                        Console.WriteLine("/nReceived analytics message./n");
+                        Console.WriteLine(message);
+                        //deserialize json
+                        
+                        AnalyticsStore.Instance.AddAnalytics(JsonConvert.DeserializeObject<AnalyticsDTO>(message));
+                        Console.WriteLine("/nAnalytics added to store./n/n");
+                    }
+                   
 
                     return Task.CompletedTask;
                 };
 
                 await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
 
+                
                 var mqttSubscribeOptions = mqttFactory.CreateSubscribeOptionsBuilder()
                     .WithTopicFilter(
                         f =>
                         {
                             f.WithTopic("event");
+                            f.WithTopic("analytics");
                         })
                     .Build();
 
