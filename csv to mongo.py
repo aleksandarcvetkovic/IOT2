@@ -30,7 +30,7 @@ def import_data_from_csv(csv_file_path, collection):
                 'device': id,
                 'battery': float(row['Battery']),
                 'humidity': float(row['Humidity']),
-                'temp': float(row['Temperature']),
+                'temperature': float(row['Temperature']),
 
             }
             if cnt == 5:
