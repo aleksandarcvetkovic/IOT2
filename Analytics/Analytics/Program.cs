@@ -81,7 +81,7 @@ namespace Analytics
                     Console.WriteLine("Received application message.");
                     Console.WriteLine(message);
                     //publish to another topic with the same message
-                    if (json.Temperature < 23)
+                    if (json.Temperature < 25)
                     {
 
                         var mqttApplicationMessage = new MqttApplicationMessageBuilder()
