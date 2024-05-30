@@ -15,24 +15,18 @@ namespace Analytics
        
         public static async Task Handle_Received_Application_Message()
         {
-            /*
-             * This sample subscribes to a topic and processes the received message.
-             */
-
+            
             var mqttFactory = new MqttFactory();
 
             using (var mqttClient = mqttFactory.CreateMqttClient())
             {
-                var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer("localhost").Build();
+                var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer("mqttumrezi").Build();
 
-                // Setup message handling before connecting so that queued messages
-                // are also handled properly. When there is no event handler attached all
-                // received messages get lost.
                 mqttClient.ApplicationMessageReceivedAsync += e =>
                 {
-                    //read json attributes from message
+                  
                     var message = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
-                    //deserialize json
+                    
                     var vrednostSenzora = JsonConvert.DeserializeObject<MerenjeDTO>(message);
                     Console.WriteLine("Received application message.");
                     Console.WriteLine(message);
@@ -76,14 +70,11 @@ namespace Analytics
                     }
 
                     
-
-
                     String poruka = "";
-                   
                     if (vrednostSenzora.Temperature < 20)
-                        poruka = "Temperatura je ispod 20 stepeni/n";
+                        poruka = "Temperatura je ispod 20 stepeni\n";
                     if (vrednostSenzora.Humidity < 30)
-                        poruka += "Vlaznost vazduha je ispod 30%./n";
+                        poruka += "Vlaznost vazduha je ispod 30%.\n";
                     if(vrednostSenzora.Battery < 1)
                         poruka += "Baterija je prazna.";
 
@@ -91,7 +82,6 @@ namespace Analytics
                     { 
                         EventDTO eventDTO = new EventDTO
                         {
-
                             Date = vrednostSenzora.Date,
                             Time = vrednostSenzora.Time,
                             Device = vrednostSenzora.Device,
@@ -104,7 +94,6 @@ namespace Analytics
                             .WithTopic("event")
                             .WithPayload(JsonConvert.SerializeObject(eventDTO))
                             .Build();
-
 
                         mqttClient.PublishAsync(mqttApplicationMessage, CancellationToken.None);
                         Console.WriteLine("Event sent.");
@@ -127,24 +116,34 @@ namespace Analytics
 
                 Console.WriteLine("MQTT client subscribed to topic merenje.");
 
-                Console.WriteLine("Press enter to exit.");
+                while (true)
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(1));
+                }
 
-                Console.ReadLine();
 
-                var mqttClientDisconnectOptions = mqttFactory.CreateClientDisconnectOptionsBuilder().Build();
 
-                await mqttClient.DisconnectAsync(mqttClientDisconnectOptions, CancellationToken.None);
             }
         }
 
-        static async Task SendAnalitycs()
+      
+        //on sigint disconnect from mqtt
+        static void OnExit(object sender, ConsoleCancelEventArgs args)
         {
+            var mqttFactory = new MqttFactory();
+            using (var mqttClient = mqttFactory.CreateMqttClient())
+            {
+                var mqttClientDisconnectOptions = mqttFactory.CreateClientDisconnectOptionsBuilder().Build();
 
+                mqttClient.DisconnectAsync(mqttClientDisconnectOptions, CancellationToken.None);
+            }
         }
-
+      
         static async Task Main(string[] args)
         {
             Console.WriteLine("Analytics servise");
+
+            //await Task.Delay(10000);
             await Handle_Received_Application_Message();
             
           

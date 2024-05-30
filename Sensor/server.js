@@ -1,11 +1,11 @@
 const { MongoClient } = require('mongodb');
 const mqtt = require('mqtt');
 
-const mongoUrl = 'mongodb://localhost:27017'; // Replace with your MongoDB URL
+const mongoUrl = 'mongodb://mongoumrezi:27017'; // Replace with your MongoDB URL
 const dbName = 'sobadb'; // Replace with your database name
 const collectionName = 'senzor'; // Replace with your collection name
 
-const mqttUrl = 'mqtt://localhost:1883'; // MQTT broker URL
+const mqttUrl = 'mqtt://mqttumrezi:1883'; // MQTT broker URL
 const client = new MongoClient(mongoUrl);
 
 async function findAllDocuments(collection) {
@@ -30,9 +30,12 @@ async function closeConnection() {
 process.on('SIGINT', () => {
   closeConnection().then(() => process.exit(0));
 });
+
+
 async function main() {
   // Connect to MongoDB
-  
+  console.log('radi node');
+
   await client.connect();
   console.log('Connected successfully to MongoDB server');
 
@@ -72,4 +75,4 @@ async function main() {
   
 }
 
-main().catch(console.error);
+main();

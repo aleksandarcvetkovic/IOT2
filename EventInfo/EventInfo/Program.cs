@@ -14,40 +14,34 @@ namespace EventInfo
 
         public static async Task Handle_Received_Application_Message()
         {
-            /*
-             * This sample subscribes to a topic and processes the received message.
-             */
+           
 
             var mqttFactory = new MqttFactory();
 
             using (var mqttClient = mqttFactory.CreateMqttClient())
             {
-                var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer("localhost").Build();
+                var mqttClientOptions = new MqttClientOptionsBuilder().WithTcpServer("mqttumrezi").Build();
 
-                // Setup message handling before connecting so that queued messages
-                // are also handled properly. When there is no event handler attached all
-                // received messages get lost.
                 mqttClient.ApplicationMessageReceivedAsync += e =>
                 {
                     //read json attributes from message
                     var message = Encoding.UTF8.GetString(e.ApplicationMessage.Payload);
                     if(e.ApplicationMessage.Topic == "event")
                     {
-                        Console.WriteLine("Received event message./n");
+                        Console.WriteLine("\nReceived event message.\n");
                         Console.WriteLine(message);
                         //deserialize json
                         var Event = JsonConvert.DeserializeObject<EventDTO>(message);
                         EventInfoHistory.Instance.AddEvent(Event);
-                        Console.WriteLine("/nEvent added to history./n/n");
+                        Console.WriteLine("\nEvent added to history.\n\n");
                     }
                     else if(e.ApplicationMessage.Topic == "analytics")
                     {
-                        Console.WriteLine("/nReceived analytics message./n");
+                        Console.WriteLine("\nReceived analytics message.\n");
                         Console.WriteLine(message);
                         //deserialize json
-                        
                         AnalyticsStore.Instance.AddAnalytics(JsonConvert.DeserializeObject<AnalyticsDTO>(message));
-                        Console.WriteLine("/nAnalytics added to store./n/n");
+                        Console.WriteLine("\nAnalytics added to store.\n\n");
                     }
                    
 
@@ -56,12 +50,18 @@ namespace EventInfo
 
                 await mqttClient.ConnectAsync(mqttClientOptions, CancellationToken.None);
 
-                
+
                 var mqttSubscribeOptions = mqttFactory.CreateSubscribeOptionsBuilder()
                     .WithTopicFilter(
                         f =>
                         {
                             f.WithTopic("event");
+                            
+                        })
+                    .WithTopicFilter(
+                        f =>
+                        {
+                            
                             f.WithTopic("analytics");
                         })
                     .Build();
@@ -70,16 +70,23 @@ namespace EventInfo
 
                 Console.WriteLine("MQTT client subscribed to topic.");
 
-                Console.WriteLine("Press enter to exit.");
 
-                Console.ReadLine();
-
-                var mqttClientDisconnectOptions = mqttFactory.CreateClientDisconnectOptionsBuilder().Build();
-
-                await mqttClient.DisconnectAsync(mqttClientDisconnectOptions, CancellationToken.None);
+                while (true)
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(1));
+                }
             }
         }
+        static void OnExit(object sender, ConsoleCancelEventArgs args)
+        {
+            var mqttFactory = new MqttFactory();
+            using (var mqttClient = mqttFactory.CreateMqttClient())
+            {
+                var mqttClientDisconnectOptions = mqttFactory.CreateClientDisconnectOptionsBuilder().Build();
 
+                mqttClient.DisconnectAsync(mqttClientDisconnectOptions, CancellationToken.None);
+            }
+        }
         public static void Main(string[] args)
         {
 

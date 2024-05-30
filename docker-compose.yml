@@ -1,0 +1,41 @@
+version: '3'
+services:
+  mongo:
+    image: mongodb/mongodb-community-server:latest
+    container_name: mongoumrezi
+    networks:
+      - mreza
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+  mqtt:
+    image: eclipse-mosquitto
+    container_name: mqttumrezi
+    volumes:
+      - ./Mosquitto/config:/mosquitto/config
+      - ./Mosquitto/data:/mosquitto/data
+    networks:
+      - mreza
+  sensor:
+    image: sensorservice
+    container_name: sensorumrezi
+    networks:
+      - mreza
+  analytics:
+    image: analyticsservice
+    container_name: analyticsumrezi
+    networks:
+      - mreza
+  event:
+    image: eventservice
+    container_name: eventumrezi
+    networks:
+      - mreza
+    ports:
+      - "8080:8080"
+networks:
+  mreza:
+volumes:
+  mongo-data:
+    driver: local

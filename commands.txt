@@ -1,3 +1,19 @@
+//u folderu sensor
+docker build -t sensorservice .
+
+//u folderu analytics
+docker build --no-cache -t analyticsservice .
+
+//u folderu EvetnInfo
+docker build --no-cache -t eventservice .
+
+//u glavnom folderu
+docker-compose up
+
+docker-compose down
+
+*********************************************** ne treba za pokretanje, samo beleske
+
 docker pull eclipse-mosquitto
 
 docker run -d --name mosquitto -p 1883:1883 -p 9001:9001 `
@@ -6,3 +22,8 @@ docker run -d --name mosquitto -p 1883:1883 -p 9001:9001 `
   eclipse-mosquitto
 
 mqtt explorer za pracenje poruka
+
+portovi za mosquitto
+ports:
+      - "1883:1883"
+      - "9001:9001"
