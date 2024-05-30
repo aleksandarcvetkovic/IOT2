@@ -45,7 +45,7 @@ async function main() {
 
   // Connect to MQTT broker
   const mqttClient = mqtt.connect(mqttUrl);
-  mqttClient.on('connect', () => {
+  mqttClient.on('connect', async () => {
 
     for(let i = 0; i < data.length; i++){
       const message = JSON.stringify(data[i]);
@@ -53,9 +53,7 @@ async function main() {
         console.log('Message published:', message);
         //sleep for 3 second
       });
-      setTimeout(() => {
-        console.log('Sleeping for 3 second');
-      }, 3000);
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
    
   });
